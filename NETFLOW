@@ -31,4 +31,64 @@ INT Gi 3
 ip flow monitor CCNP8-INBOUND-MONITOR input
 ip flow monitor CCNP8-INBOUND-MONITOR output
 END
-  
+
+LAB2: CONTROL PLANE POLICING: monitor all data entering
+and leaving the control plane: ALL the interfaces: g1,g2,g3. 
+ExamTASK: Limit the ping to 8000 packets/sec! cm-pm-sp
+config t	
+ip access-list extended ABUSEPING
+ permit icmp any any
+class-map STOPPING
+ match access-group name ABUSEPING
+ no policy-map PINGSTOP
+policy-map PINGSTOP
+ class STOPPING
+ police 8000 conform-action transmit exceed-action drop
+ exit
+ control-plane
+ service-policy input PINGSTOP
+end
+sh policy-map control-plane 
+
+TASK2: limit, telnet, ssh, and https: 
+config t
+ip access-list extended TELNET
+ permit tcp any any eq 23
+ip access-list extended SSH
+ permit tcp any any eq 22
+ip access-list extended HTTPS
+ permit tcp any any eq 443
+ip access-list extended ICMP
+ permit tcp any any eq 
+Class-map match-all CMTELNET
+ match access-group name TELNET
+ exit
+Class-map match-all CMSSH
+ match access-group name SSH
+ exit
+Class-map match-all CMHTTPS
+ match access-group name HTTPS 
+ exit
+ Class-map match-all CMICMP
+ match access-group name ICMP 
+ exit
+ Policy-map PMCOPP
+class CMTELNET
+ police 10000 conform-action drop exceed-action drop
+class CMSSH
+ police 80000 conform-action transmit exceed-action transmit
+class CMHTTPS
+ police 60000 conform-action transmit exceed-action transmit
+class CMICMP
+ police rate 4pps conform-action transmit exceed-action drop
+class class-default
+ police 12000 conform-action transmit exceed-action transmit
+exit
+control-plane
+ service-policy input PMCOPP
+END
+
+ THE JOURNEY TO SIX FIGURES/MONTH
+ 1. install csr1000v 17 x 2: siteA and siteB
+ 2. make 3 loopbs each x eem, phyton+linux + Postman = 9
+ 3. Ansible automate. the 9 loopbacks. sample.yml
